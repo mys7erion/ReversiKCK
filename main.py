@@ -1,13 +1,14 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QDialog, QVBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QMainWindow, QVBoxLayout, QGridLayout
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
-class App(QDialog):
+class App(QMainWindow):
 
 	def __init__(self):
 		super().__init__()
-		self.title = 'PyQt5 layout - pythonspot.com'
+		self.title = 'PyQt5'
 		self.left = 10
 		self.top = 10
 		self.width = 320
@@ -19,42 +20,56 @@ class App(QDialog):
 		self.setGeometry(self.left, self.top, self.width, self.height)
 		
 		self.createGridLayout()
-		
-		windowLayout = QVBoxLayout()
-		windowLayout.addWidget(self.horizontalGroupBox)
-		self.setLayout(windowLayout)
+
+		self.setCentralWidget(self.GroupBox)
+
+		#self.board[4][4].setText("wololo")
+		self.resetBoard()
 		
 		self.show()
 		
 	def createGridLayout(self):
-		self.horizontalGroupBox = QGroupBox("Grid")
+		self.GroupBox = QGroupBox("Grid")
 		layout = QGridLayout()
 		#layout.setColumnStretch(1, 4)
 		#layout.setColumnStretch(2, 4)
-		
-		buttons = []
-
-
+		self.board = []
 		for y in range(8):
 			temp = []
 			for x in range(8):
 				butt = QPushButton("x:"+str(x) +", y:"+ str(y))
+				butt.clicked.connect(lambda: self.placePiece(x, y))
 				temp.append(butt)
 				layout.addWidget(butt,x,y)
-			buttons.append(temp)
+			self.board.append(temp)
 		
-		buttons[4][4].setText("wololo")
-		# layout.addWidget(QPushButton('1'),0,0)
-		# layout.addWidget(QPushButton('2'),0,1)
-		# layout.addWidget(QPushButton('3'),0,2)
-		# layout.addWidget(QPushButton('4'),1,0)
-		# layout.addWidget(QPushButton('5'),1,1)
-		# layout.addWidget(QPushButton('6'),1,2)
-		# layout.addWidget(QPushButton('7'),2,0)
-		# layout.addWidget(QPushButton('8'),2,1)
-		# layout.addWidget(QPushButton('9'),2,2)
-		
-		self.horizontalGroupBox.setLayout(layout)
+		self.GroupBox.setLayout(layout)
+
+	def resetBoard(self):
+		for y in range(len(self.board)):
+			for x in range(len(self.board[y])):
+				print("x:"+str(x) + ", y:" + str(y))
+				#self.board[y][x].setEnabled(False)
+				self.setEmpty(x, y)
+				
+		self.setBlack(4, 4)
+		self.setBlack(3, 3)
+		self.setWhite(3, 4)
+		self.setWhite(4, 3)
+			
+	def setBlack(self, x, y):
+		self.board[y][x].setText("X")
+
+	def setWhite(self, x, y):
+		self.board[y][x].setText("O")
+	
+	def setEmpty(self, x, y):
+		self.board[y][x].setText(" ")
+
+	def placePiece(self, x, y):
+		self.setWhite(x, y)
+		self.board[y][x].setEnabled(False)
+
 
 if __name__ == '__main__':
 	app = QApplication(sys.argv)
