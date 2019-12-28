@@ -8,6 +8,15 @@ from collections import namedtuple
 Point = namedtuple("point", ["x", "y"])
 
 
+player1Color = "#FFFFFF"
+player2Color = "#000000"
+
+buttonClearText = "color: rgba(0,0,0,0); border-radius:38px"
+
+bgInactive = "#268000"
+bgActive = "#41de00"
+
+
 class App(QMainWindow):
 
 	def __init__(self):
@@ -15,21 +24,30 @@ class App(QMainWindow):
 		self.title = "reversi"
 		self.left = 100
 		self.top = 100
-		self.width = 320
-		self.height = 100
+		self.width = 650
+		self.height = 650
 
 		self.player1 = "O"
+		self.player1canMove = True
 		self.player2 = "X"
+		self.player2canMove = True
 		self.empty = " "
 
 		self.activePlayer = self.player1
 		self.initUI()
 
-	
+	def activePlayerColor(self):
+		if self.activePlayer == self.player1:
+			return player1Color
+
+		if self.activePlayer == self.player2:
+			return player2Color
 		
 	def initUI(self):
 		self.setWindowTitle(self.title)
 		self.setGeometry(self.left, self.top, self.width, self.height)
+		self.setFixedSize(self.width, self.height)
+
 		
 		self.createGridLayout()
 
@@ -42,17 +60,26 @@ class App(QMainWindow):
 		
 	def createGridLayout(self):
 		self.GroupBox = QGroupBox("Grid")
+		self.GroupBox.setStyleSheet("color: rgba(0, 0, 0, 1); background-color:"+bgInactive)
 
 		self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer)
 
 		layout = QGridLayout()
+		layout.setSpacing(0)
 		#layout.setColumnStretch(1, 4)
 		#layout.setColumnStretch(2, 4)
+
+		sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+		sizePolicy.setHorizontalStretch(0)
+		sizePolicy.setVerticalStretch(0)
+
 		self.board = []
 		for y in range(8):
 			temp = []
 			for x in range(8):
 				butt = QPushButton(str(x) +" "+ str(y))
+				sizePolicy.setHeightForWidth(butt.sizePolicy().hasHeightForWidth())
+				butt.setSizePolicy(sizePolicy)
 				butt.clicked.connect(lambda B=butt,Y=y,X=x: self.buttonPressed(Y,X))
 				temp.append(butt)
 				layout.addWidget(butt,x,y)
@@ -75,27 +102,26 @@ class App(QMainWindow):
 				#self.board[y][x].setEnabled(False)
 				self.setEmpty(x, y)
 				
-		self.setPlayer2(4, 4)
-		self.setPlayer2(3, 3)
-		self.setPlayer1(3, 4)
-		self.setPlayer1(4, 3)
+		self.setPiece(4, 4, self.player2)
+		self.setPiece(3, 3, self.player2)
+		self.setPiece(3, 4, self.player1)
+		self.setPiece(4, 3, self.player1)
 		self.enablePossibleMoves()
-			
-	def setPlayer2(self, x, y):
-		self.board[x][y].setText(self.player2)
-		self.board[x][y].setEnabled(False)
 
-	def setPlayer1(self, x, y):
-		self.board[x][y].setText(self.player1)
-		self.board[x][y].setEnabled(False)
-	
 	def setEmpty(self, x, y):
 		self.board[x][y].setText(self.empty)
-		self.board[x][y].setEnabled(True)
+		self.board[x][y].setStyleSheet("background-color: "+bgInactive)
+		#self.board[x][y].setEnabled(False)
+
 
 	def setPiece(self, x, y, piece):
 		self.board[x][y].setText(piece)
 		self.board[x][y].setEnabled(False)
+		if piece == self.player1:
+			self.board[x][y].setStyleSheet(buttonClearText+";background-color: "+player1Color)
+		if piece == self.player2:
+			self.board[x][y].setStyleSheet(buttonClearText+";background-color: "+player2Color)
+
 		#print(self.board)
 
 	def reverse(self, piece):
@@ -105,9 +131,9 @@ class App(QMainWindow):
 		#print("reversing: " + str(x) + "," + str(y))
 
 		if self.board[x][y].text() == self.player2:
-			self.board[x][y].setText(self.player1)
+			self.setPiece(x, y, self.player1)
 		elif self.board[x][y].text() == self.player1:
-			self.board[x][y].setText(self.player2)
+			self.setPiece(x, y, self.player2)
 
 
 	def checkPiece(self, x, y):
@@ -175,14 +201,60 @@ class App(QMainWindow):
 				if self.board[x][y].text() == self.empty:
 					if len(self.getPiecesToReverse(x, y, self.activePlayer)) > 0:
 						self.board[x][y].setEnabled(True)
+						self.board[x][y].setStyleSheet("background-color: "+bgActive+"; border: 5px solid "+self.activePlayerColor())
+
 						possibleMovesCounter += 1
 					else:
 						self.board[x][y].setEnabled(False)
+						self.board[x][y].setStyleSheet("background-color: "+bgInactive)
+
+						
 				else:
 					self.board[x][y].setEnabled(False)
-				
+		return possibleMovesCounter
 	
+	def changePlayer(self):
+		if self.activePlayer == self.player1:
+			self.activePlayer = self.player2
+		else:
+			self.activePlayer = self.player1
+
+
+
+		if self.enablePossibleMoves() == 0:
+			if self.activePlayer == self.player1:
+				self.player1canMove = False
+				if self.player2canMove :
+					self.changePlayer()
+					return
+				else:
+					print("game over")
+					return
+			if self.activePlayer == self.player2:
+				self.player2canMove = False
+				if self.player1canMove :
+					self.changePlayer()
+					return
+				else:
+					print("game over")
+					return
+		else:
+			if self.activePlayer == self.player1:
+				self.player1canMove = True
+			if self.activePlayer == self.player2:
+				self.player2canMove = True
+
+		print("ACTIVE PLAYER : " + self.activePlayer)
+
+		player1Score = self.countScore(self.player1)
+		player2Score = self.countScore(self.player2)
+
+		self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer +"; SCORES: "+self.player1+"-"+str(player1Score)+"; "+self.player2+"-"+str(player2Score)+"")
+
+		# player has no legit moves to do , change player again
 		
+
+
 
 
 	def buttonPressed(self, x, y):
@@ -195,23 +267,9 @@ class App(QMainWindow):
 
 			for piece in toReverse:
 				self.reverse(piece)
-
-			if self.activePlayer == self.player1:
-				self.activePlayer = self.player2
-			else:
-				self.activePlayer = self.player1
-
-			#print("ACTIVE PLAYER : " + self.activePlayer)
-
-			player1Score = self.countScore(self.player1)
-			player2Score = self.countScore(self.player2)
-
-			self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer +"; SCORES: "+self.player1+"-"+str(player1Score)+"; "+self.player2+"-"+str(player2Score)+"")
-
-			self.enablePossibleMoves()
-				
 			
-		
+			self.changePlayer()
+
 
 
 if __name__ == '__main__':
