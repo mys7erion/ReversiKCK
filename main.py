@@ -42,6 +42,9 @@ class App(QMainWindow):
 		
 	def createGridLayout(self):
 		self.GroupBox = QGroupBox("Grid")
+
+		self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer)
+
 		layout = QGridLayout()
 		#layout.setColumnStretch(1, 4)
 		#layout.setColumnStretch(2, 4)
@@ -56,6 +59,14 @@ class App(QMainWindow):
 			self.board.append(temp)
 		
 		self.GroupBox.setLayout(layout)
+
+	def countScore(self, player):
+		score = 0
+		for y in range(8):
+			for x in range(8):
+				if self.board[x][y].text() == player:
+					score += 1
+		return score
 
 	def resetBoard(self):
 		for y in range(len(self.board)):
@@ -91,7 +102,7 @@ class App(QMainWindow):
 		x = piece[0]
 		y = piece[1]
 
-		print("reversing: " + str(x) + "," + str(y))
+		#print("reversing: " + str(x) + "," + str(y))
 
 		if self.board[x][y].text() == self.player2:
 			self.board[x][y].setText(self.player1)
@@ -175,9 +186,8 @@ class App(QMainWindow):
 
 
 	def buttonPressed(self, x, y):
-		print("button "+ str(x) + "_" + str(y) + " clicked!")
+		#print("button "+ str(x) + "_" + str(y) + " clicked!")
 		
-
 		toReverse = self.getPiecesToReverse(x, y, self.activePlayer)
 		if toReverse.__len__() > 0:
 
@@ -191,7 +201,13 @@ class App(QMainWindow):
 			else:
 				self.activePlayer = self.player1
 
-			print("ACTIVE PLAYER : " + self.activePlayer)
+			#print("ACTIVE PLAYER : " + self.activePlayer)
+
+			player1Score = self.countScore(self.player1)
+			player2Score = self.countScore(self.player2)
+
+			self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer +"; SCORES: "+self.player1+"-"+str(player1Score)+"; "+self.player2+"-"+str(player2Score)+"")
+
 			self.enablePossibleMoves()
 				
 			
