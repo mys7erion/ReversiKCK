@@ -1,4 +1,5 @@
 import sys
+import socket
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QMainWindow, QVBoxLayout, QGridLayout
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
@@ -27,13 +28,13 @@ class App(QMainWindow):
 		self.width = 650
 		self.height = 650
 
-		self.player1 = "O"
+		self.player1 = "White"
 		self.player1canMove = True
-		self.player2 = "X"
+		self.player2 = "Black"
 		self.player2canMove = True
 		self.empty = " "
 
-		self.activePlayer = self.player1
+		self.activePlayer = self.player2
 		self.initUI()
 
 	def activePlayerColor(self):
@@ -220,7 +221,6 @@ class App(QMainWindow):
 			self.activePlayer = self.player1
 
 
-
 		if self.enablePossibleMoves() == 0:
 			if self.activePlayer == self.player1:
 				self.player1canMove = False
@@ -254,9 +254,6 @@ class App(QMainWindow):
 		# player has no legit moves to do , change player again
 		
 
-
-
-
 	def buttonPressed(self, x, y):
 		#print("button "+ str(x) + "_" + str(y) + " clicked!")
 		
@@ -272,7 +269,10 @@ class App(QMainWindow):
 
 
 
-if __name__ == '__main__':
+def main():
 	app = QApplication(sys.argv)
 	ex = App()
 	sys.exit(app.exec_())
+
+if __name__ == '__main__':
+	main()
