@@ -20,15 +20,12 @@ bgActive = "#41de00"
 player1port = 55555
 player2port = 55556
 
-cantMoveMsg = (-1,-1)
+cantMoveMsg = (8,8)
 
 class App(QMainWindow):
 
     def __init__(self, player):
         super().__init__()
-        #self._key_lock = threading.Lock()
-        
-
         self.title = "reversi"
         self.left = 100
         self.top = 100
@@ -36,9 +33,7 @@ class App(QMainWindow):
         self.height = 650
 
         self.player1 = "w"
-        #self.player1canMove = True
         self.player2 = "b"
-        #self.player2canMove = True
         self.empty = " "
 
         self.selectedPlayer = player
@@ -58,8 +53,6 @@ class App(QMainWindow):
         self.iCanMove = True
         self.opponentCanMove = True
         
-        #self.activePlayer = self.player1
-
         self.initUI()
 
     def activePlayerColor(self):
@@ -68,6 +61,13 @@ class App(QMainWindow):
 
         if self.selectedPlayer == self.player2:
             return player2Color
+
+    def getPlayerColor(self, player):
+        if player == self.player1:
+            return player1Color
+
+        if player == self.player2:
+            return player2Color
         
     def initUI(self):
         self.setWindowTitle(self.title)
@@ -75,14 +75,13 @@ class App(QMainWindow):
         self.setFixedSize(self.width, self.height)
         self.createGridLayout()
         self.setCentralWidget(self.GroupBox)
-        self.show()
         self.resetBoard()
+        self.show()
+        self.firstMove()
         
     def createGridLayout(self):
         self.GroupBox = QGroupBox("Grid")
         self.GroupBox.setStyleSheet("color: rgba(0, 0, 0, 1); background-color:"+bgInactive)
-
-        #self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer)
 
         layout = QGridLayout()
         layout.setSpacing(0)
@@ -91,7 +90,6 @@ class App(QMainWindow):
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
 
-        #with self._key_lock: 
         self.board = []
         for y in range(8):
             temp = []
@@ -115,11 +113,8 @@ class App(QMainWindow):
         return score
 
     def resetBoard(self):
-        #with self._key_lock: 
         for y in range(len(self.board)):
             for x in range(len(self.board[y])):
-                #self.board[x][y].setText("x:"+str(x) + ", y:" + str(y))
-                #self.board[y][x].setEnabled(False)
                 self.setEmpty(x, y)
                 
         self.setPiece(4, 4, self.player2)
@@ -127,6 +122,18 @@ class App(QMainWindow):
         self.setPiece(3, 4, self.player1)
         self.setPiece(4, 3, self.player1)
 
+
+        ## to tylko do testow   
+        for y in range(len(self.board)-1):
+            for x in range(len(self.board[y])):
+                if x % 2 == 0:
+                    self.setPiece(x, y, self.player2)
+                else:
+                    self.setPiece(x, y, self.player1)
+
+        
+
+    def firstMove(self):
         if(self.selectedPlayer == self.player1):
             self.enablePossibleMoves(self.selectedPlayer)
         else:
@@ -136,34 +143,19 @@ class App(QMainWindow):
             self.opponentsMove(r[0], r[1])
             self.enablePossibleMoves(self.selectedPlayer)
 
-        #else waiting for opponents move
-
     def setEmpty(self, x, y):
-        #with self._key_lock: 
         self.board[x][y].setText(self.empty)
-        #print(10)
         self.board[x][y].setStyleSheet("background-color: "+bgInactive)
-        #self.board[x][y].setEnabled(False)
 
     def setPiece(self, x, y, piece):
-        #with self._key_lock: 
-        #print("in")
         self.board[x][y].setText(piece)
         self.board[x][y].setEnabled(False)
-        if piece == self.player1:
-            #print(20)
-            self.board[x][y].setStyleSheet(buttonClearText+";background-color: "+player1Color)
-        if piece == self.player2:
-            #print(30)
-            self.board[x][y].setStyleSheet(buttonClearText+";background-color: "+player2Color)
-        #print("out")    
-        #print(self.board)
+
+        self.board[x][y].setStyleSheet(buttonClearText+";background-color: " + self.getPlayerColor(piece))
 
     def reverse(self, piece):
         x = piece[0]
         y = piece[1]
-
-        #print("reversing: " + str(x) + "," + str(y))
 
         if self.board[x][y].text() == self.player2:
             self.setPiece(x, y, self.player1)
@@ -237,7 +229,7 @@ class App(QMainWindow):
                     if len(self.getPiecesToReverse(x, y, player)) > 0:
                         self.board[x][y].setEnabled(True)
                         #print(40)
-                        self.board[x][y].setStyleSheet("background-color: "+bgActive+"; border: 5px solid "+player1Color)
+                        self.board[x][y].setStyleSheet("background-color: "+bgActive+"; border: 5px solid "+self.activePlayerColor())
 
                         possibleMovesCounter += 1
                     else:
@@ -260,76 +252,66 @@ class App(QMainWindow):
                     #print(60)
                     self.board[x][y].setStyleSheet("background-color: "+bgInactive)
                      
-    def changePlayerMultiplayer(self, pos):
 
-        if self.activePlayer == self.player1:
-            self.activePlayer = self.player2
-        else:
-            self.activePlayer = self.player1
-
-        if self.enablePossibleMoves(self.player1) == 0:
-            self.player2canMove = False
-            if self.player1canMove :
-                #i cant move but opponent can, sent him info
-                self.sendSocket(cantMoveMsg)
-                return
-            else:
-                # no one can move, game over
-                print("game over")
-                return
-        else:
-            #i have possible moves
-            self.player2canMove = True
-            self.sendSocket(pos)
-
-        print("ACTIVE PLAYER : " + self.activePlayer)
-
-        player1Score = self.countScore(self.player1)
-        player2Score = self.countScore(self.player2)
-
-        self.GroupBox.setTitle("ACTIVE PLAYER : " + self.activePlayer +"; SCORES: "+self.player1+"-"+str(player1Score)+"; "+self.player2+"-"+str(player2Score)+"")
+    def getScore(self):
+        return "YOUR SCORE:" + str(self.countScore(self.selectedPlayer)) + " OPPONENT SCORE:" + str(self.countScore(self.opponentPlayer))
 
     def buttonPressed(self, x, y):
-        if x == -1 and y == -1:
-            print(" ... i cant move, send msg ... ")
-            pos = struct.pack('ii', x, y)
-            self.disableBoard()
-            self.sendSocket(pos)
-            print("Waiting for oponent's move...")
-            self.GroupBox.setTitle("Waiting for oponent's move...")
-            self.repaint()
-            r = self.getMove() 
-            print(r)
-            self.opponentsMove(r[0], r[1])
-            self.repaint()
-            return
-
+        possibleMoves = 0
         toReverse = self.getPiecesToReverse(x, y, self.selectedPlayer)
         
         if len(toReverse) > 0:
             self.setPiece(x, y, self.selectedPlayer)
-            self.repaint()
-
             for piece in toReverse:
                 self.reverse(piece)
 
+            self.repaint()
+
+            print("Sending your move to opponent..." + str(x) + "," + str(y))
             pos = struct.pack('ii', x, y)
             
             self.disableBoard()
             self.sendSocket(pos)
             print("Waiting for oponent's move...")
-            self.GroupBox.setTitle("Waiting for oponent's move...")
-            
+            self.GroupBox.setTitle(self.getScore() + " (Waiting for oponent's move)")
             self.repaint()
             r = self.getMove()
             print("received move" + str(r))
             self.opponentsMove(r[0], r[1])
-            self.repaint()
-            self.enablePossibleMoves(self.selectedPlayer)
+            possibleMoves = self.enablePossibleMoves(self.selectedPlayer)
             self.repaint()
         
+        while(possibleMoves == 0):
+            #i cant move
+            print(" ... i cant move, send msg ... ")
+            print("Sending your move to opponent..." + str(cantMoveMsg[0]) + "," + str(cantMoveMsg[1]))
+            pos = struct.pack('ii', cantMoveMsg[0], cantMoveMsg[1])
+            #self.disableBoard()
+            self.sendSocket(pos)
+
+            if(self.opponentCanMove):
+                print("Waiting for oponent's move...")
+                self.GroupBox.setTitle(self.getScore() + " (Waiting for oponent's move)")
+                self.repaint()
+                r = self.getMove()
+                print("received move" + str(r))
+
+            if((r[0] == cantMoveMsg[0] and r[1] == cantMoveMsg[1] ) or not self.opponentCanMove) :
+                #opponent also cant move, game over
+                print("game over")
+                self.GroupBox.setTitle("GAME OVER! - " + self.getScore())
+                self.disableBoard()
+                return
+            else:
+                self.opponentsMove(r[0], r[1])
+                self.repaint()
+                possibleMoves = self.enablePossibleMoves(self.selectedPlayer)
+                self.repaint()
+        
         print("Waiting for your move ...")
-        self.GroupBox.setTitle("Waiting for your move ...")
+        self.GroupBox.setTitle(self.getScore() + " (Waiting for your move)")
+            
+
         
             
     #odpowiednik buttonPressed ale dla przeciwnika
@@ -343,10 +325,11 @@ class App(QMainWindow):
             print("received invalid move from opponent")
 
 
+
     def sendSocket(self, pos):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        print("Sending your move to opponent...")
+        #print("Sending your move to opponent..." + str(pos[0]) + "," + str(pos[1]))
 
         while True:
             try:
@@ -366,6 +349,11 @@ class App(QMainWindow):
         pool = ThreadPool(processes=1)
         async_result = pool.apply_async(self.receiveSocket)
         r = async_result.get()  
+        if(r[0] == cantMoveMsg[0] and r[1] == cantMoveMsg[1] ):
+            self.opponentCanMove = False
+        else:
+            self.opponentCanMove = True
+
         return r
 
     def receiveSocket(self):
