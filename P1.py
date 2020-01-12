@@ -1,13 +1,13 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 
-from game import App
+from game import GameApp
 
 player = ""
 
 def main():
     app = QApplication(sys.argv)
-    ex = App("w")
+    ex = GameApp("w")
     sys.exit(app.exec_())
 
 if __name__ == '__main__':

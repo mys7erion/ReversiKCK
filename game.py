@@ -1,7 +1,7 @@
 import socket
 import struct
 import threading
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QMainWindow, QVBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QMainWindow, QVBoxLayout, QGridLayout, QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
@@ -22,7 +22,7 @@ player2port = 55556
 
 cantMoveMsg = (8,8)
 
-class App(QMainWindow):
+class GameApp(QMainWindow):
 
     def __init__(self, player):
         super().__init__()
@@ -122,7 +122,7 @@ class App(QMainWindow):
         self.setPiece(3, 4, self.player1)
         self.setPiece(4, 3, self.player1)
 
-
+        
         ## to tylko do testow   
         for y in range(len(self.board)-1):
             for x in range(len(self.board[y])):
@@ -130,9 +130,8 @@ class App(QMainWindow):
                     self.setPiece(x, y, self.player2)
                 else:
                     self.setPiece(x, y, self.player1)
-
         
-
+        
     def firstMove(self):
         if(self.selectedPlayer == self.player1):
             self.enablePossibleMoves(self.selectedPlayer)
@@ -301,6 +300,8 @@ class App(QMainWindow):
                 print("game over")
                 self.GroupBox.setTitle("GAME OVER! - " + self.getScore())
                 self.disableBoard()
+                self.show_popup()
+                
                 return
             else:
                 self.opponentsMove(r[0], r[1])
@@ -311,6 +312,23 @@ class App(QMainWindow):
         print("Waiting for your move ...")
         self.GroupBox.setTitle(self.getScore() + " (Waiting for your move)")
             
+
+    def show_popup(self):
+        msg = QMessageBox()
+        msg.setWindowTitle("GAME OVER")
+        msg.setText("GAME OVER! - " + self.getScore())
+        msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Retry)
+        msg.buttonClicked.connect(self.handle_popup)
+        #msg.setIcon(QMessageBox.Information)
+        x = msg.exec_()
+
+        
+    def handle_popup(self, button):
+        if button.text() == "OK":
+            self.close()
+            #return
+        else:
+            return
 
         
             
