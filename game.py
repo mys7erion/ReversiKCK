@@ -9,8 +9,8 @@ import time
 from multiprocessing.pool import ThreadPool
 from collections import namedtuple
 
-player1Color = "#CCCCCC"
-player2Color = "#333333"
+player1Color = "#FFFFFF"
+player2Color = "#000000"
 
 buttonClearText = "color: rgba(0,0,0,0); border-radius:38px"
 
