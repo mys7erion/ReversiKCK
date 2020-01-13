@@ -9,8 +9,8 @@ import time
 from multiprocessing.pool import ThreadPool
 from collections import namedtuple
 
-player1Color = "#FFFFFF"
-player2Color = "#000000"
+player1Color = "#CCCCCC"
+player2Color = "#333333"
 
 buttonClearText = "color: rgba(0,0,0,0); border-radius:38px"
 
@@ -24,16 +24,24 @@ cantMoveMsg = (8,8)
 
 class GameApp(QMainWindow):
 
-    def __init__(self, player):
+    def __init__(self, player, nick):
         super().__init__()
-        self.title = "reversi"
+
+        self.nick = nick
+        self.opponentNick = ""
+
+        self.title = "Reversi - " + nick
         self.left = 100
         self.top = 100
         self.width = 650
         self.height = 650
 
         self.player1 = "w"
+        self.player1full = "white"
+
         self.player2 = "b"
+        self.player2full = "black"
+
         self.empty = " "
 
         self.selectedPlayer = player
@@ -142,10 +150,17 @@ class GameApp(QMainWindow):
                     self.setPiece(x, y, self.player1)
         
     def firstMove(self):
+        
+        
         if(self.selectedPlayer == self.player1):
+            self.sendNick()
+            self.opponentNick = self.getNick()
             self.enablePossibleMoves(self.selectedPlayer)
         else:
+            self.opponentNick = self.getNick()
+            self.sendNick()
             self.repaint()
+            time.sleep(1)
             r = self.getMove()
             print("received move" + str(r))
             self.opponentsMove(r[0], r[1])
@@ -261,7 +276,7 @@ class GameApp(QMainWindow):
                     self.board[x][y].setStyleSheet("background-color: "+bgInactive)
                      
     def getScore(self):
-        return "YOUR SCORE:" + str(self.countScore(self.selectedPlayer)) + " OPPONENT SCORE:" + str(self.countScore(self.opponentPlayer))
+        return self.nick + "("+self.selectedPlayer+") SCORE:" + str(self.countScore(self.selectedPlayer)) + " "+self.opponentNick+" ("+self.opponentPlayer+") SCORE:" + str(self.countScore(self.opponentPlayer))
 
     def gameOver(self):
         print("game over")
@@ -345,7 +360,6 @@ class GameApp(QMainWindow):
         print("Waiting for your move ...")
         self.GroupBox.setTitle(self.getScore() + " (Waiting for your move)")
             
-
     def show_popup(self):
         msg = QMessageBox()
         msg.setWindowTitle("GAME OVER")
@@ -355,7 +369,6 @@ class GameApp(QMainWindow):
         #msg.setIcon(QMessageBox.Information)
         x = msg.exec_()
 
-        
     def handle_popup(self, button):
         if button.text() == "OK":
             self.close()
@@ -413,11 +426,41 @@ class GameApp(QMainWindow):
         print(f"Connection {address} has been established.")
 
         new_pos = clientsocket.recv(1024)
-        
 
         x, y = struct.unpack('ii', new_pos)
         print(str(x) + " " + str(y)) 
-
         clientsocket.close()
         return x, y
+
+    def getNick(self):
+        self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.listener.bind((socket.gethostname(), self.myPort))
+        self.listener.listen()
+        clientsocket, address = self.listener.accept()
+        print(f"[getting nick]Connection {address} has been established.")
+
+        new_pos = clientsocket.recv(1024)
+
+        receivedNick = new_pos.decode()
+
+        print("received opponents nick = " + receivedNick) 
+        clientsocket.close()
+        return receivedNick
+
+
+    def sendNick(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("Sending nick move to opponent")
+        while True:
+            try:
+                s.connect((socket.gethostname(), self.opponentPort))
+                break
+            except Exception as e:
+                print("error sending nick, tryiong again ... ")
+                time.sleep(500)
+                pass
+
+        s.send(self.nick.encode())
+        s.close()
+
 
