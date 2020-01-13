@@ -1,6 +1,8 @@
 import socket
 import struct
+import os
 import threading
+import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QGroupBox, QMainWindow, QVBoxLayout, QGridLayout, QMessageBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSlot
@@ -361,9 +363,7 @@ class GameApp(QMainWindow):
             self.close()
             #return
         else:
-            return
-
-        
+            os.execl(sys.executable, os.path.abspath(__file__), *sys.argv) 
             
     #odpowiednik buttonPressed ale dla przeciwnika
     def opponentsMove(self, x, y):
