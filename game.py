@@ -112,6 +112,16 @@ class GameApp(QMainWindow):
                     score += 1
         return score
 
+    def isBoardFull(self):
+        print(" ... checking if board is full ... ")
+        for y in range(8):
+            for x in range(8):
+                if self.board[x][y].text() == self.empty:
+                    print(" ... board has empty space at "+str(x) + " " + str(y))
+                    return False
+        print(" ... board is full ... ")
+        return True
+
     def resetBoard(self):
         for y in range(len(self.board)):
             for x in range(len(self.board[y])):
@@ -130,7 +140,6 @@ class GameApp(QMainWindow):
                     self.setPiece(x, y, self.player2)
                 else:
                     self.setPiece(x, y, self.player1)
-        
         
     def firstMove(self):
         if(self.selectedPlayer == self.player1):
@@ -251,42 +260,74 @@ class GameApp(QMainWindow):
                     #print(60)
                     self.board[x][y].setStyleSheet("background-color: "+bgInactive)
                      
-
     def getScore(self):
         return "YOUR SCORE:" + str(self.countScore(self.selectedPlayer)) + " OPPONENT SCORE:" + str(self.countScore(self.opponentPlayer))
 
+    def gameOver(self):
+        print("game over")
+        self.GroupBox.setTitle("GAME OVER! - " + self.getScore())
+        self.disableBoard()
+        self.show_popup()
+
     def buttonPressed(self, x, y):
-        possibleMoves = 0
+        possibleMoves = -1
         toReverse = self.getPiecesToReverse(x, y, self.selectedPlayer)
         
-        if len(toReverse) > 0:
-            self.setPiece(x, y, self.selectedPlayer)
+        if len(toReverse) > 0:# if move is legit
+            self.setPiece(x, y, self.selectedPlayer)#place piece
             for piece in toReverse:
-                self.reverse(piece)
+                self.reverse(piece)# reverse pieces
 
             self.repaint()
 
+            #sending move to opponent
             print("Sending your move to opponent..." + str(x) + "," + str(y))
-            pos = struct.pack('ii', x, y)
-            
             self.disableBoard()
-            self.sendSocket(pos)
+            self.sendMove(x, y)
+            
+            if(self.isBoardFull()):
+                #then game over
+                self.gameOver()
+                return
+
+            # waiting for opponents move
             print("Waiting for oponent's move...")
             self.GroupBox.setTitle(self.getScore() + " (Waiting for oponent's move)")
             self.repaint()
+            #getting opponents move
             r = self.getMove()
             print("received move" + str(r))
-            self.opponentsMove(r[0], r[1])
+            # if opponents move == cantMoveMsg
+            if(self.opponentCanMove):
+                self.opponentsMove(r[0], r[1])
+                if(self.isBoardFull()):
+                    #then game over
+                    self.gameOver()
+                    return
+            else:
+                if(self.isBoardFull()):
+                    #then game over
+                    self.gameOver()
+                    return
+
+
+            # get board ready for my move
             possibleMoves = self.enablePossibleMoves(self.selectedPlayer)
             self.repaint()
+            
         
-        while(possibleMoves == 0):
-            #i cant move
-            print(" ... i cant move, send msg ... ")
+        while(possibleMoves == 0):# while i dont have legit moves
+            print(" ... i cant move ... ")
+            # ---------------- should not be necessary, but
+            if(self.isBoardFull()):
+                #then game over
+                self.gameOver()
+                return
+            # ----------------
+            
+            print(" ... send cantMove msg ... ")
             print("Sending your move to opponent..." + str(cantMoveMsg[0]) + "," + str(cantMoveMsg[1]))
-            pos = struct.pack('ii', cantMoveMsg[0], cantMoveMsg[1])
-            #self.disableBoard()
-            self.sendSocket(pos)
+            self.sendMove(cantMoveMsg[0], cantMoveMsg[1])
 
             if(self.opponentCanMove):
                 print("Waiting for oponent's move...")
@@ -294,20 +335,12 @@ class GameApp(QMainWindow):
                 self.repaint()
                 r = self.getMove()
                 print("received move" + str(r))
-
-            if((r[0] == cantMoveMsg[0] and r[1] == cantMoveMsg[1] ) or not self.opponentCanMove) :
-                #opponent also cant move, game over
-                print("game over")
-                self.GroupBox.setTitle("GAME OVER! - " + self.getScore())
-                self.disableBoard()
-                self.show_popup()
-                
-                return
-            else:
-                self.opponentsMove(r[0], r[1])
-                self.repaint()
-                possibleMoves = self.enablePossibleMoves(self.selectedPlayer)
-                self.repaint()
+                if(self.opponentCanMove):
+                    self.opponentsMove(r[0], r[1])
+                    self.repaint()
+                    possibleMoves = self.enablePossibleMoves(self.selectedPlayer)
+                    self.repaint()
+                    
         
         print("Waiting for your move ...")
         self.GroupBox.setTitle(self.getScore() + " (Waiting for your move)")
@@ -340,15 +373,15 @@ class GameApp(QMainWindow):
             for piece in toReverse:
                 self.reverse(piece)
         else:
-            print("received invalid move from opponent")
+            print("received invalid move from opponent: (" + str(x) + " " + str(y) + ")")
 
-
-
+    def sendMove(self, x, y):
+        pos = struct.pack("ii", x, y)
+        self.sendSocket(pos)
+    
     def sendSocket(self, pos):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         #print("Sending your move to opponent..." + str(pos[0]) + "," + str(pos[1]))
-
         while True:
             try:
                 s.connect((socket.gethostname(), self.opponentPort))
@@ -356,10 +389,8 @@ class GameApp(QMainWindow):
             except Exception as e:
                 print(e.__cause__)
                 pass
-        
-        
-        s.send(pos)
 
+        s.send(pos)
         s.close()
 
     def getMove(self):
@@ -390,4 +421,3 @@ class GameApp(QMainWindow):
         clientsocket.close()
         return x, y
 
-        #self.opponentsMove(x, y)
